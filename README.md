@@ -9,6 +9,7 @@ In this project I used :
 
 * React Hooks
 * Context API
+* Firebase
 
 #### React Hooks Example
 
