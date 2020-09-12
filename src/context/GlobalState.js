@@ -1,14 +1,10 @@
 import React, { createContext, useReducer } from 'react';
-import AppReducer from './AppReducer'
+import AppReducer from './AppReducer';
+import firebase from '../firebase/firbase';
 
 //Initial State
 const initialState = {
-    transactions: [
-        { id: 1, text: 'Flower', amount: -20 },
-        { id: 2, text: 'Salary', amount: 300 },
-        { id: 3, text: 'Book', amount: -10 },
-        { id: 4, text: 'Camera', amount: 150 }
-    ]
+    transactions: []
 }
 
 // Create Context
@@ -20,13 +16,46 @@ const GlobalProvider = ({ children }) => {
     const [state, dispatch] = useReducer(AppReducer, initialState);
 
     //Actions
+    function getTransactions() {
+        try {
+            const itemsRef = firebase.database().ref('transactions');
+            itemsRef.on('value', (snapshot) => {
+                let items = snapshot.val();
+                let transactions = [];
+                for (let item in items) {
+                    transactions.push({
+                        id: item,
+                        text: items[item].text,
+                        amount: items[item].amount
+                    });
+                }
+                dispatch({ type: 'GET_T', payload: transactions });
+
+            });
+        } catch (error) {
+            dispatch({ type: 'DELETE_T', payload: error });
+        }
+    }
     function addTransaction(transaction) {
-        dispatch({ type: 'ADD_T', payload: transaction });
+        try {
+            const itemsRef = firebase.database().ref('transactions');
+
+            itemsRef.push(transaction);
+        } catch (error) {
+            dispatch({ type: 'DELETE_T', payload: error });
+        }
+
     }
     function deleteTransaction(id) {
-        dispatch({ type: 'DELETE_T', payload: id });
+        try {
+            const itemRef = firebase.database().ref(`/transactions/${id}`);
+            itemRef.remove();
+            dispatch({ type: 'DELETE_T', payload: id });
+        } catch (error) {
+            dispatch({ type: 'DELETE_T', payload: error });
+        }
     }
-    return (<GlobalContext.Provider value={{ transactions: state.transactions, deleteTransaction, addTransaction }}>{children}</GlobalContext.Provider>)
+    return (<GlobalContext.Provider value={{ transactions: state.transactions, deleteTransaction, addTransaction, getTransactions }}>{children}</GlobalContext.Provider>)
 }
 
 export default GlobalProvider;
